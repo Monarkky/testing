@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Are you Lopes?</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Are you Lopes?</h1>
+    <button onclick="yesPressed()">Yes</button>
+    <button onclick="noPressed()">No</button>
+    <div id="result"></div>
+
+    <script>
+        function yesPressed() {
+            document.body.innerHTML = `
+                <h1>:)</h1>
+                <p>I love you so much ❤️❤️❤️</p>
+            `;
+        }
+
+        function noPressed() {
+            document.body.innerHTML = `
+                <h1>:(</h1>
+                <p>You are not the one I love</p>
+                <button onclick="goBack()">Back</button>
+            `;
+        }
+
+        function goBack() {
+            document.body.innerHTML = `
+                <h1>Are you Lopes?</h1>
+                <button onclick="yesPressed()">Yes</button>
+                <button onclick="noPressed()">No</button>
+                <div id="result"></div>
+            `;
+        }
+    </script>
+</body>
+</html>
