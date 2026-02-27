@@ -1,44 +1,244 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <title>Are you Lopes?</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monarkky Finance - Hybrid Edition</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
+        :root {
+            --primary: #3498db; --success: #2ecc71; --danger: #e74c3c; --warning: #f1c40f;
+            --dark-bg: #0f2027; --card-bg: rgba(25, 25, 25, 0.9);
+            --text-light: #e0e0e0; --border: rgba(255, 255, 255, 0.1);
         }
+        body { 
+            font-family: 'Segoe UI', sans-serif; margin: 0; min-height: 100vh;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            color: var(--text-light); display: flex; flex-direction: column; align-items: center; padding: 20px;
+        }
+        .glass { background: var(--card-bg); backdrop-filter: blur(15px); border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 15px 35px rgba(0,0,0,0.5); }
+        
+        /* --- AUTH BOX --- */
+        #authOverlay { width: 380px; padding: 40px; text-align: center; margin-top: 10vh; box-sizing: border-box; }
+        input, select { width: 100%; padding: 14px; margin-bottom: 15px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.05); color: #fff; outline: none; transition: 0.3s; box-sizing: border-box;}
+        input:focus { border-color: var(--primary); background: rgba(255, 255, 255, 0.1); }
+        button { width: 100%; padding: 14px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; text-transform: uppercase; }
+        .btn-alt { background: transparent; border: 1px solid var(--border); color: #fff; margin-top: 10px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+
+        /* --- CATEGORY SECTION --- */
+        #categorySection { display: none; width: 100%; max-width: 900px; text-align: center; }
+        .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin: 30px 0; }
+        .cat-card { padding: 40px 20px; cursor: pointer; position: relative; transition: 0.3s; }
+        .cat-card:hover { transform: translateY(-5px); background: rgba(52, 152, 219, 0.2); }
+        .delete-cat-btn { position: absolute; top: 10px; right: 10px; background: none; color: var(--danger); font-size: 18px; width: auto; padding: 5px; opacity: 0.3; }
+
+        /* --- MAIN DASHBOARD --- */
+        #mainContent { display: none; width: 100%; max-width: 1150px; }
+        .cat-title-display { text-align: center; font-size: 2.5em; font-weight: 800; margin: 20px 0; color: #fff; text-transform: uppercase; letter-spacing: 5px; }
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; padding: 20px; }
+        .table-container { overflow-x: auto; padding: 0 20px 20px 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 15px; border-bottom: 2px solid var(--primary); color: var(--primary); }
+        td { padding: 15px; border-bottom: 1px solid var(--border); }
+        .nominal-plus { color: #2ecc71; font-weight: bold; }
+        .nominal-minus { color: #e74c3c; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>Are you Lopes?</h1>
-    <button onclick="yesPressed()">Yes</button>
-    <button onclick="noPressed()">No</button>
-    <div id="result"></div>
 
-    <script>
-        function yesPressed() {
-            document.body.innerHTML = `
-                <h1>:)</h1>
-                <p>I love you so much ❤️❤️❤️</p>
-            `;
-        }
+    <div id="authOverlay" class="glass">
+        <div id="loginBox">
+            <h2>🔐 Login System</h2>
+            <p style="font-size: 0.9em; opacity: 0.6; margin-bottom: 25px;">Masukkan kredensial Cloud</p>
+            <input type="text" id="user" placeholder="Username">
+            <input type="password" id="pass" placeholder="Password">
+            <button class="btn-primary" id="btnLogin" onclick="checkLogin()">Masuk Sekarang</button>
+            <button class="btn-alt" onclick="showRegister()">Daftar Akun Baru</button>
+            <p id="errMsg" style="color: var(--danger); font-size: 0.85em; margin-top: 15px; display: none;">Username atau Password salah!</p>
+        </div>
 
-        function noPressed() {
-            document.body.innerHTML = `
-                <h1>:(</h1>
-                <p>You are not the one I love</p>
-                <button onclick="goBack()">Back</button>
-            `;
-        }
+        <div id="registerBox" style="display: none;">
+            <h2>📝 Registrasi</h2>
+            <input type="text" id="regUser" placeholder="Buat Username">
+            <input type="password" id="regPass" placeholder="Buat Password">
+            <input type="text" id="regOtp" placeholder="OTP Admin (Rahasia)" style="border: 1px solid var(--warning);">
+            <button id="btnProsesDaftar" class="btn-success" onclick="prosesDaftar()">Konfirmasi Daftar</button>
+            <button class="btn-alt" onclick="hideRegister()">Batal</button>
+        </div>
+    </div>
 
-        function goBack() {
-            document.body.innerHTML = `
-                <h1>Are you Lopes?</h1>
-                <button onclick="yesPressed()">Yes</button>
-                <button onclick="noPressed()">No</button>
-                <div id="result"></div>
-            `;
-        }
-    </script>
+    <div id="categorySection">
+        <div style="display:flex; justify-content: space-between; align-items:center;">
+            <h2 id="welcomeText">Pilih Kategori Keuangan</h2>
+            <button onclick="logout()" style="width:auto; padding: 10px 20px; background:var(--danger); color:#fff; font-size: 12px;">LOGOUT</button>
+        </div>
+        <div class="cat-grid" id="categoryGrid"></div>
+        <div class="glass" style="padding:25px; max-width: 400px; margin: 0 auto;">
+            <h4>+ Tambah Kategori Baru</h4>
+            <input type="text" id="newCatName" placeholder="Contoh: Tabungan, Bisnis, Kantor">
+            <button class="btn-success" onclick="addNewCategory()">BUAT KATEGORI</button>
+        </div>
+    </div>
+
+    <div id="mainContent">
+        <button onclick="backToCategories()" style="width:auto; margin-bottom:15px; background:#555; color:#fff;">⬅ Kembali ke Menu</button>
+        <div class="cat-title-display" id="activeCategoryName">KATEGORI</div>
+        <div class="glass">
+            <div class="form-row">
+                <input type="date" id="tanggal">
+                <input type="text" id="nama" placeholder="Nama Transaksi">
+                <input type="text" id="keterangan" placeholder="Keterangan">
+                <select id="bank">
+                    <option value="Cash">Cash</option>
+                    <option value="BCA">BCA</option>
+                    <option value="Mandiri">Mandiri</option>
+                    <option value="BRI">BRI</option>
+                </select>
+                <input type="number" id="nominal" placeholder="Nominal">
+                <button class="btn-success" id="btnSimpan" onclick="simpanData()">SIMPAN DATA</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>TANGGAL</th><th>NAMA</th><th>KETERANGAN</th><th>BANK</th><th>NOMINAL</th><th>SALDO</th><th>AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="isiTabel"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxj8FqfuhyPTaxjV3GJJfcKH_Isp0U5qYZem6EDZ33NIEaLCtc4wbx9Jd8pHdZ9gPftMQ/exec";
+    let activeCategory = "";
+    const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
+
+    // --- FUNGSI LOGIN & REGISTER (Sama seperti coding lama kamu) ---
+    function showRegister() { document.getElementById('loginBox').style.display='none'; document.getElementById('registerBox').style.display='block'; }
+    function hideRegister() { document.getElementById('loginBox').style.display='block'; document.getElementById('registerBox').style.display='none'; }
+
+    async function checkLogin() {
+        const u = document.getElementById('user').value;
+        const p = document.getElementById('pass').value;
+        const btn = document.getElementById('btnLogin');
+        if(!u || !p) return;
+        btn.innerText = "Checking...";
+        try {
+            const res = await fetch(SCRIPT_URL);
+            const db = await res.json();
+            const userFound = db.users.find(row => row[0].toString() === u && row[1].toString() === p);
+            if (userFound) {
+                sessionStorage.setItem("isLoggedIn", "true");
+                sessionStorage.setItem("activeUser", userFound[0]);
+                showCategories(db.categories);
+            } else {
+                document.getElementById('errMsg').style.display = 'block';
+                btn.innerText = "Masuk Sekarang";
+            }
+        } catch (e) { alert("Koneksi Gagal"); btn.innerText = "Masuk Sekarang"; }
+    }
+
+    async function prosesDaftar() {
+        const u = document.getElementById('regUser').value;
+        const p = document.getElementById('regPass').value;
+        const o = document.getElementById('regOtp').value;
+        if(!u || !p || !o) { alert("Lengkapi data!"); return; }
+        const btn = document.getElementById('btnProsesDaftar');
+        btn.innerText = "Mendaftarkan...";
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'register', username: u, password: p, otp: o }) });
+            const result = await res.text();
+            if(result.includes("Success")) { alert("Berhasil! Silakan Login."); hideRegister(); } else { alert(result); }
+        } catch (e) { alert("Error Server"); } finally { btn.innerText = "Konfirmasi Daftar"; }
+    }
+
+    // --- FUNGSI KATEGORI & DASHBOARD ---
+    function showCategories(categories) {
+        const user = sessionStorage.getItem("activeUser");
+        document.getElementById('welcomeText').innerText = `Hi, ${user}! Pilih Kategori:`;
+        document.getElementById('authOverlay').style.display = 'none';
+        document.getElementById('categorySection').style.display = 'block';
+        document.getElementById('mainContent').style.display = 'none';
+        const grid = document.getElementById('categoryGrid');
+        grid.innerHTML = "";
+        categories.forEach(cat => {
+            const card = document.createElement('div');
+            card.className = "glass cat-card";
+            card.innerHTML = `<button class="delete-cat-btn" onclick="deleteCategory(event, '${cat}')">🗑</button>
+                              <div onclick="openCategory('${cat}')"><h3>${cat}</h3></div>`;
+            grid.appendChild(card);
+        });
+    }
+
+    async function addNewCategory() {
+        const name = document.getElementById('newCatName').value;
+        if (!name) return;
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'addCategory', categoryName: name }) });
+        location.reload();
+    }
+
+    async function deleteCategory(e, name) {
+        e.stopPropagation();
+        if (!confirm(`Hapus kategori ${name}?`)) return;
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteCategory', categoryName: name }) });
+        location.reload();
+    }
+
+    async function openCategory(name) {
+        activeCategory = name;
+        document.getElementById('categorySection').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        document.getElementById('activeCategoryName').innerText = name;
+        document.getElementById('tanggal').value = new Date().toLocaleDateString('en-CA');
+        refreshTable();
+    }
+
+    async function refreshTable() {
+        const tbody = document.getElementById('isiTabel');
+        tbody.innerHTML = "<tr><td colspan='7' style='text-align:center'>Memuat Data...</td></tr>";
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'loadData', categoryName: activeCategory }) });
+        const data = await res.json();
+        tbody.innerHTML = "";
+        data.slice().reverse().forEach((row, revIdx) => {
+            const originalIndex = (data.length - 1) - revIdx;
+            const nom = parseFloat(row[4]);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${new Date(row[0]).toLocaleDateString('id-ID')}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td>
+                            <td class="${nom >= 0 ? 'nominal-plus' : 'nominal-minus'}">${formatter.format(nom)}</td>
+                            <td style="font-weight:bold">${formatter.format(row[5])}</td>
+                            <td><button onclick="hapusRow(${originalIndex})">🗑️</button></td>`;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function simpanData() {
+        const btn = document.getElementById('btnSimpan');
+        btn.disabled = true; btn.innerText = "Menyimpan...";
+        const payload = {
+            action: 'saveTransaction', categoryName: activeCategory,
+            tanggal: document.getElementById('tanggal').value,
+            nama: document.getElementById('nama').value,
+            keterangan: document.getElementById('keterangan').value,
+            bank: document.getElementById('bank').value,
+            nominal: parseFloat(document.getElementById('nominal').value)
+        };
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+        document.getElementById('nama').value = ""; document.getElementById('nominal').value = "";
+        btn.disabled = false; btn.innerText = "SIMPAN DATA";
+        refreshTable();
+    }
+
+    async function hapusRow(idx) {
+        if(!confirm("Hapus data?")) return;
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', categoryName: activeCategory, rowIndex: idx }) });
+        refreshTable();
+    }
+
+    function backToCategories() { location.reload(); }
+    function logout() { sessionStorage.clear(); location.reload(); }
+</script>
 </body>
 </html>
