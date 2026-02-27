@@ -121,21 +121,19 @@
     let activeCategory = "";
     const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
 
-    // --- FITUR AUTO-LOGIN SAAT REFRESH ---
+    // --- FITUR UPGRADE: CEK LOGIN SAAT REFRESH (ANTI-LOGOUT) ---
     window.onload = function() {
-        const isLoggedIn = sessionStorage.getItem("isLoggedIn");
-        const user = sessionStorage.getItem("activeUser");
-        if (isLoggedIn === "true" && user) {
-            silentRefreshMenu(); // Langsung masuk ke menu kategori jika sudah login sebelumnya
+        const logged = sessionStorage.getItem("isLoggedIn");
+        if (logged === "true") {
+            silentRefreshMenu();
         }
     };
 
-    // --- HELPER: GET INDONESIA TODAY DATE (WIB) ---
+    // --- FITUR UPGRADE: TANGGAL WIB OTOMATIS ---
     function getTodayWIB() {
         return new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Jakarta'}); 
     }
 
-    // --- FUNGSI LOGIN & REGISTER ---
     function showRegister() { document.getElementById('loginBox').style.display='none'; document.getElementById('registerBox').style.display='block'; }
     function hideRegister() { document.getElementById('loginBox').style.display='block'; document.getElementById('registerBox').style.display='none'; }
 
@@ -179,7 +177,7 @@
             const res = await fetch(SCRIPT_URL);
             const db = await res.json();
             showCategories(db.categories);
-        } catch (e) { console.error("Refresh gagal"); }
+        } catch(e) { console.error("Refresh failed"); }
     }
 
     function showCategories(categories) {
@@ -203,29 +201,23 @@
         const inputField = document.getElementById('newCatName');
         const name = inputField.value.trim();
         if (!name) return;
-
         const btn = document.getElementById('btnTambahCat');
         btn.innerText = "SEDANG MEMBUAT...";
         btn.disabled = true;
-
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'addCategory', categoryName: name }) });
             if (res.ok) {
-                inputField.value = ""; // BERSIHKAN KOLOM KATEGORI
+                inputField.value = ""; // FITUR UPGRADE: CLEAR INPUT
                 await silentRefreshMenu();
                 openCategory(name);
             }
-        } catch (e) {
-            alert("Gagal koneksi server.");
-        } finally {
-            btn.innerText = "BUAT KATEGORI";
-            btn.disabled = false;
-        }
+        } catch (e) { alert("Gagal koneksi server."); } 
+        finally { btn.innerText = "BUAT KATEGORI"; btn.disabled = false; }
     }
 
     async function deleteCategory(e, name) {
         e.stopPropagation();
-        if (!confirm(`⚠️ PERINGATAN: Hapus kategori "${name}" dan seluruh isinya?`)) return;
+        if (!confirm(`Hapus kategori ${name}? Semua data di dalamnya akan hilang!`)) return; // FITUR UPGRADE: KONFIRMASI
         try {
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteCategory', categoryName: name }) });
             await silentRefreshMenu();
@@ -237,7 +229,7 @@
         document.getElementById('categorySection').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('activeCategoryName').innerText = name;
-        document.getElementById('tanggal').value = getTodayWIB(); // SET TANGGAL HARI INI
+        document.getElementById('tanggal').value = getTodayWIB(); // FITUR UPGRADE: RESET TANGGAL WIB
         refreshTable();
     }
 
@@ -260,33 +252,34 @@
     }
 
     async function simpanData() {
+        const inNama = document.getElementById('nama');
+        const inKet = document.getElementById('keterangan');
+        const inNom = document.getElementById('nominal');
+        const inTgl = document.getElementById('tanggal');
+
+        if(!inNama.value || !inNom.value) { alert("Nama dan Nominal wajib diisi!"); return; }
+
         const btn = document.getElementById('btnSimpan');
-        const iNama = document.getElementById('nama');
-        const iKet = document.getElementById('keterangan');
-        const iNom = document.getElementById('nominal');
-        const iTgl = document.getElementById('tanggal');
-
-        if(!iNama.value || !iNom.value) { alert("Nama dan Nominal wajib diisi!"); return; }
-
         btn.disabled = true; btn.innerText = "Menyimpan...";
+        
         const payload = {
             action: 'saveTransaction', categoryName: activeCategory,
-            tanggal: iTgl.value, nama: iNama.value, keterangan: iKet.value,
-            bank: document.getElementById('bank').value, nominal: parseFloat(iNom.value)
+            tanggal: inTgl.value, nama: inNama.value, keterangan: inKet.value,
+            bank: document.getElementById('bank').value, nominal: parseFloat(inNom.value)
         };
-        
+
         try {
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-            // BERSIHKAN KOLOM SETELAH SIMPAN
-            iNama.value = ""; iKet.value = ""; iNom.value = "";
-            iTgl.value = getTodayWIB(); // RESET TANGGAL KE HARI INI
+            // FITUR UPGRADE: CLEAR INPUT SETELAH SIMPAN
+            inNama.value = ""; inKet.value = ""; inNom.value = "";
+            inTgl.value = getTodayWIB();
             refreshTable();
-        } catch(e) { alert("Gagal menyimpan."); } 
+        } catch (e) { alert("Gagal simpan data"); }
         finally { btn.disabled = false; btn.innerText = "SIMPAN DATA"; }
     }
 
     async function hapusRow(idx) {
-        if(!confirm("Yakin ingin menghapus data ini?")) return;
+        if(!confirm("Hapus data transaksi ini?")) return; // FITUR UPGRADE: KONFIRMASI
         await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', categoryName: activeCategory, rowIndex: idx }) });
         refreshTable();
     }
