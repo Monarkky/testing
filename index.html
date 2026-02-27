@@ -121,6 +121,14 @@
     let activeCategory = "";
     const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 });
 
+    // --- HELPER: GET INDONESIA TODAY DATE (WIB) ---
+    function getTodayWIB() {
+        const now = new Date();
+        const offset = 7; // WIB is UTC+7
+        const wibDate = new Date(now.getTime() + (offset * 60 * 60 * 1000));
+        return now.toLocaleDateString('en-CA', {timeZone: 'Asia/Jakarta'}); 
+    }
+
     // --- FUNGSI LOGIN & REGISTER ---
     function showRegister() { document.getElementById('loginBox').style.display='none'; document.getElementById('registerBox').style.display='block'; }
     function hideRegister() { document.getElementById('loginBox').style.display='block'; document.getElementById('registerBox').style.display='none'; }
@@ -160,7 +168,6 @@
         } catch (e) { alert("Error Server"); } finally { btn.innerText = "Konfirmasi Daftar"; }
     }
 
-    // --- UPGRADE FUNGSI SILENT REFRESH (TANPA LOGOUT) ---
     async function silentRefreshMenu() {
         const res = await fetch(SCRIPT_URL);
         const db = await res.json();
@@ -196,9 +203,9 @@
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'addCategory', categoryName: name }) });
             if (res.ok) {
-                inputField.value = ""; // KOSONGKAN KOLOM
-                await silentRefreshMenu(); // REFRESH DATA TANPA LOGOUT
-                openCategory(name); // OTOMATIS MASUK KE MENU KATEGORI BARU
+                inputField.value = ""; // UPGRADE: KOSONGKAN KOLOM SETELAH BUAT
+                await silentRefreshMenu();
+                openCategory(name);
             }
         } catch (e) {
             alert("Gagal koneksi server.");
@@ -210,11 +217,12 @@
 
     async function deleteCategory(e, name) {
         e.stopPropagation();
-        if (!confirm(`Hapus kategori ${name}?`)) return;
+        // UPGRADE: KONFIRMASI SEBELUM HAPUS KATEGORI
+        if (!confirm(`⚠️ PERINGATAN: Menghapus kategori "${name}" akan menghapus seluruh data di dalamnya. Lanjutkan?`)) return;
         
         try {
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteCategory', categoryName: name }) });
-            await silentRefreshMenu(); // REFRESH DATA TANPA LOGOUT
+            await silentRefreshMenu();
         } catch (e) {
             alert("Gagal menghapus.");
         }
@@ -225,7 +233,10 @@
         document.getElementById('categorySection').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('activeCategoryName').innerText = name;
-        document.getElementById('tanggal').value = new Date().toLocaleDateString('en-CA');
+        
+        // UPGRADE: SET TANGGAL OTOMATIS KE HARI INI (WIB)
+        document.getElementById('tanggal').value = getTodayWIB();
+        
         refreshTable();
     }
 
@@ -249,29 +260,49 @@
 
     async function simpanData() {
         const btn = document.getElementById('btnSimpan');
+        const inputNama = document.getElementById('nama');
+        const inputKet = document.getElementById('keterangan');
+        const inputNominal = document.getElementById('nominal');
+        const inputTanggal = document.getElementById('tanggal');
+
+        if(!inputNama.value || !inputNominal.value) { alert("Nama dan Nominal wajib diisi!"); return; }
+
         btn.disabled = true; btn.innerText = "Menyimpan...";
         const payload = {
             action: 'saveTransaction', categoryName: activeCategory,
-            tanggal: document.getElementById('tanggal').value,
-            nama: document.getElementById('nama').value,
-            keterangan: document.getElementById('keterangan').value,
+            tanggal: inputTanggal.value,
+            nama: inputNama.value,
+            keterangan: inputKet.value,
             bank: document.getElementById('bank').value,
-            nominal: parseFloat(document.getElementById('nominal').value)
+            nominal: parseFloat(inputNominal.value)
         };
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-        document.getElementById('nama').value = ""; document.getElementById('nominal').value = "";
-        btn.disabled = false; btn.innerText = "SIMPAN DATA";
-        refreshTable();
+        
+        try {
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+            
+            // UPGRADE: BERSIHKAN SEMUA INPUT SETELAH SIMPAN
+            inputNama.value = ""; 
+            inputKet.value = ""; 
+            inputNominal.value = "";
+            inputTanggal.value = getTodayWIB(); // RESET TANGGAL KE HARI INI
+            
+            refreshTable();
+        } catch(e) {
+            alert("Gagal menyimpan data.");
+        } finally {
+            btn.disabled = false; btn.innerText = "SIMPAN DATA";
+        }
     }
 
     async function hapusRow(idx) {
-        if(!confirm("Hapus data?")) return;
+        // UPGRADE: KONFIRMASI SEBELUM HAPUS DATA TRANSAKSI
+        if(!confirm("Apakah Anda yakin ingin menghapus data transaksi ini?")) return;
+        
         await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', categoryName: activeCategory, rowIndex: idx }) });
         refreshTable();
     }
 
     function backToCategories() {
-        // Balik ke menu utama tanpa refresh halaman penuh
         document.getElementById('mainContent').style.display = 'none';
         document.getElementById('categorySection').style.display = 'block';
         silentRefreshMenu();
